@@ -7,7 +7,8 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StartScreen from './components/StartScreen';
 import Canvas from './components/Canvas';
-import WardrobePanel from './components/WardrobeModal';
+import ShopPanel from './components/WardrobeModal';
+import ProductModal from './components/ProductModal';
 import OutfitStack from './components/OutfitStack';
 import { generateVirtualTryOnImage, generatePoseVariation, changeBackgroundImage } from './services/geminiService';
 import { OutfitLayer, WardrobeItem } from './types';
@@ -34,16 +35,13 @@ const useMediaQuery = (query: string): boolean => {
     const mediaQueryList = window.matchMedia(query);
     const listener = (event: MediaQueryListEvent) => setMatches(event.matches);
 
-    // DEPRECATED: mediaQueryList.addListener(listener);
     mediaQueryList.addEventListener('change', listener);
     
-    // Check again on mount in case it changed between initial state and effect runs
     if (mediaQueryList.matches !== matches) {
       setMatches(mediaQueryList.matches);
     }
 
     return () => {
-      // DEPRECATED: mediaQueryList.removeListener(listener);
       mediaQueryList.removeEventListener('change', listener);
     };
   }, [query, matches]);
@@ -62,6 +60,7 @@ const App: React.FC = () => {
   const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
   const [isSheetCollapsed, setIsSheetCollapsed] = useState(false);
   const [wardrobe, setWardrobe] = useState<WardrobeItem[]>(defaultWardrobe);
+  const [selectedProduct, setSelectedProduct] = useState<WardrobeItem | null>(null);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   const activeOutfitLayers = useMemo(() => 
@@ -306,7 +305,8 @@ const App: React.FC = () => {
                       onBackgroundChange={handleBackgroundChange}
                       isLoading={isLoading}
                     />
-                    <WardrobePanel
+                    <ShopPanel
+                      onProductClick={setSelectedProduct}
                       onGarmentSelect={handleGarmentSelect}
                       activeGarmentIds={activeGarmentIds}
                       isLoading={isLoading}
@@ -315,6 +315,16 @@ const App: React.FC = () => {
                   </div>
               </aside>
             </main>
+            <ProductModal
+              isOpen={!!selectedProduct}
+              onClose={() => setSelectedProduct(null)}
+              product={selectedProduct}
+              onTryOn={(file, info) => {
+                handleGarmentSelect(file, info);
+                setSelectedProduct(null); // Close modal after action
+              }}
+              isLoading={isLoading}
+            />
             <AnimatePresence>
               {isLoading && isMobile && (
                 <motion.div

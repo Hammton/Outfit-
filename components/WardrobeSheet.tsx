@@ -52,6 +52,9 @@ const WardrobeModal: React.FC<WardrobeModalProps> = ({ isOpen, onClose, onGarmen
                 url: URL.createObjectURL(file), // for preview, not used by API
                 // FIX: Add missing 'type' property. All uploaded items are considered garments.
                 type: 'garment',
+                // FIX: Add missing 'price' and 'description' properties to conform to WardrobeItem type.
+                price: 'N/A',
+                description: 'A custom uploaded item.',
             };
             onGarmentSelect(file, customGarmentInfo);
         }

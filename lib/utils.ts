@@ -38,3 +38,56 @@ export function getFriendlyErrorMessage(error: unknown, context: string): string
     
     return `${context}. ${rawMessage}`;
 }
+
+// Helper to convert image URL to a File object.
+export const urlToFile = (url: string, filename: string): Promise<File> => {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.setAttribute('crossOrigin', 'anonymous');
+
+        image.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                return reject(new Error('Could not get canvas context.'));
+            }
+            ctx.drawImage(image, 0, 0);
+
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    return reject(new Error('Canvas toBlob failed.'));
+                }
+                const mimeType = blob.type || 'image/png';
+                const file = new File([blob], filename, { type: mimeType });
+                resolve(file);
+            }, 'image/png');
+        };
+
+        image.onerror = (error) => {
+             // Fallback for CORS issues where canvas is tainted.
+             // This might not work for all servers, but it's a good attempt.
+            fetch(url, { mode: 'cors' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok for ${url}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                     const mimeType = blob.type || 'image/png';
+                     const file = new File([blob], filename, { type: mimeType });
+                     resolve(file);
+                })
+                .catch(fetchError => {
+                    console.error('Image load error:', error);
+                    console.error('Fetch fallback error:', fetchError);
+                    reject(new Error(`Could not load image from URL for conversion. This might be a CORS issue. See the browser console for more details.`));
+                });
+        };
+
+        image.src = url;
+    });
+};

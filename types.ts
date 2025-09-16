@@ -8,6 +8,8 @@ export interface WardrobeItem {
   name: string;
   url: string;
   type: 'garment' | 'accessory';
+  price: string;
+  description: string;
 }
 
 export interface OutfitLayer {
